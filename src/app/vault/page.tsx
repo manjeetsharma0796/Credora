@@ -20,6 +20,25 @@ function BlinkDot({ color = '#00d4a0' }: { color?: string }) {
   );
 }
 
+// Safely derive the current testnet address from the session, clearing any
+// old/broken session data produced by previous @stacks/connect versions.
+function getSafeTestnetAddress(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!userSession.isUserSignedIn()) return null;
+    const data = userSession.loadUserData();
+    const addr = (data as any)?.profile?.stxAddress?.testnet as string | undefined;
+    return addr ?? null;
+  } catch {
+    try {
+      window.localStorage.removeItem('blockstack-session');
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+}
+
 const STEPS = [
   { id: 1, code: '01', label: 'Connect Wallet', sub: 'Leather or Xverse' },
   { id: 2, code: '02', label: 'Deposit sBTC',   sub: 'Choose amount'     },
@@ -101,10 +120,10 @@ export default function VaultPage() {
 
   // Fetch both balances and vault info
   const loadData = useCallback(async () => {
-    if (!userSession.isUserSignedIn()) return;
+    const addr = getSafeTestnetAddress();
+    if (!addr) return;
     setLoadingBal(true);
     try {
-      const addr = userSession.loadUserData().profile.stxAddress.testnet;
       const [bal, vault] = await Promise.all([fetchBalances(addr), getVaultInfo(addr)]);
       setBalances(bal);
       setVaultInfo(vault);
@@ -116,7 +135,7 @@ export default function VaultPage() {
   // On mount: if wallet already connected, jump to deposit and load data
   useEffect(() => {
     if (!mounted) return;
-    if (userSession.isUserSignedIn()) {
+    if (getSafeTestnetAddress()) {
       loadData();
       setActiveStep(2);
     }
@@ -125,7 +144,7 @@ export default function VaultPage() {
   // Poll vault info every 30s while connected
   useEffect(() => {
     if (!mounted) return;
-    if (userSession.isUserSignedIn()) {
+    if (getSafeTestnetAddress()) {
       pollRef.current = setInterval(loadData, 30_000);
     }
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
@@ -133,8 +152,8 @@ export default function VaultPage() {
 
   if (!mounted) return null;
 
-  const isConnected = userSession.isUserSignedIn();
-  const address     = isConnected ? userSession.loadUserData().profile.stxAddress.testnet : null;
+  const address     = getSafeTestnetAddress();
+  const isConnected = !!address;
   const shortAddr   = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : null;
   const usdVal      = sbtcAmount ? `≈ $${(Number(sbtcAmount) * 104_000).toLocaleString()}` : '≈ $0';
   const estYield    = sbtcAmount ? (Number(sbtcAmount) * 104_000 * apy / 100).toFixed(0) : '—';

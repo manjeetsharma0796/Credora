@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## BTC Boost Vault — One‑Click sBTC Leveraged Yield on Stacks
 
-## Getting Started
+This is a custom [Next.js](https://nextjs.org) app that lets users deposit sBTC, automatically borrow USDCx against it on Stacks testnet, and loop the position to earn amplified USDCx yield — without ever selling Bitcoin.
 
-First, run the development server:
+---
+
+## Tech stack
+
+- **Framework**: Next.js App Router
+- **Chain**: Stacks Testnet
+- **Wallets**: Leather / Xverse via `@stacks/connect`
+- **Contracts helper**: `src/lib/stacks.ts`
+
+Key on‑chain config (testnet):
+
+- **Vault contract**: `ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-usdcx-vault`
+- **Mock sBTC token**: `ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc`
+- **Mock USDCx token**: `ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-usdcx`
+
+---
+
+## Local development
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open `http://localhost:3000` in a browser with **Leather** or **Xverse** installed and switched to **Stacks Testnet**.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## End‑to‑end testnet demo flow
 
-## Learn More
+This is the exact flow to record a 1–2 minute demo video.
 
-To learn more about Next.js, take a look at the following resources:
+1. **Prepare wallets + funds**
+   - Install **Leather** or **Xverse** and switch network to **Stacks Testnet**.
+   - Fund the address with:
+     - A small amount of **testnet STX** (for gas).
+     - Some **mock sBTC** and **mock USDCx** that correspond to the contracts above.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. **Launch the app**
+   - Start the dev server (`npm run dev`) or open your deployed URL.
+   - Go to the landing page and click **“Launch Vault”** to reach `/vault`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+3. **Connect wallet**
+   - In the left sidebar, click **CONNECT WALLET**.
+   - Approve the connection in Leather/Xverse.
+   - Confirm the UI shows:
+     - Green **CONNECTED** badge.
+     - Your **STX / sBTC / USDCx** balances.
 
-## Deploy on Vercel
+4. **Deposit sBTC**
+   - In the stepper, go to **STEP 02 — Deposit sBTC**.
+   - Enter a small amount of sBTC (e.g. `0.01`) and review the **POSITION PREVIEW** card.
+   - Click **CONTINUE TO BOOST →** to move to the boost step.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+5. **Boost (two transactions)**
+   - In **STEP 03 — Confirm & Boost** press **BOOST & EARN →**.
+   - Your wallet will show **two popups**:
+     1. **Deposit sBTC** (`deposit-sbtc`).
+     2. **Boost yield** (`boost-yield`).
+   - Approve both; the bottom‑right toast will show **TX BROADCAST** with a link to the Hiro explorer.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+6. **Check dashboard state**
+   - After a few blocks, hit **↻ REFRESH** in the sidebar.
+   - Confirm:
+     - `Your Position` shows **deposited sBTC** and **borrowed USDCx**.
+     - `Accrued Yield` in **USDCx** starts to grow over time.
+
+7. **Claim rewards**
+   - Switch to **STEP 04 — Rewards**.
+   - When **CLAIMABLE NOW** is non‑zero, click **CLAIM … USDCx →**.
+   - Approve the wallet popup; verify the claim transaction in Hiro explorer and see your **USDCx wallet balance** increase.
+
+8. **Withdraw sBTC (optional)**
+   - Go back to **STEP 02** and click **↑ WITHDRAW ALL**.
+   - Approve the wallet transaction; once confirmed, your vault position should show **0 sBTC deposited**.
+
+---
+
+## Error handling / gotchas
+
+- If the user **rejects a transaction**, the UI will show a red error banner in the Boost / Claim steps.
+- If the wallet is **not connected**, the app:
+  - Hides on‑chain balances.
+  - Suggests **STEP 01** as the next action in the top progress indicator.
+- All contract interactions are on **Stacks Testnet**; mainnet will not work without changing `STACKS_TESTNET` in `src/lib/stacks.ts`.
+
