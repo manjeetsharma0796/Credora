@@ -1,62 +1,225 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 :root {
-  --background: #050505;
-  --foreground: #ffffff;
   --btc-orange: #F7931A;
+  --btc-orange-light: #FFB347;
   --usdc-blue: #2775CA;
-  --glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --bg-dark: #080810;
+  --bg-card: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --text-muted: rgba(255,255,255,0.45);
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', sans-serif;
-  background-image: radial-gradient(circle at 50% -20%, #F7931A22, transparent 50%),
-                    radial-gradient(circle at 10% 80%, #2775CA11, transparent 40%);
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-dark);
+  color: #ffffff;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-.glass-card {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  border-radius: 24px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
+/* Animated radial glow background */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: radial-gradient(ellipse, rgba(247,147,26,0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -10%;
+  left: 10%;
+  width: 500px;
+  height: 400px;
+  background: radial-gradient(ellipse, rgba(39,117,202,0.08) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 0;
 }
 
-.btn-primary {
-  background: var(--btc-orange);
-  color: black;
+/* Glass card */
+.glass {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+}
+
+/* Primary CTA Button */
+.btn-orange {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #F7931A, #FF6B00);
+  color: #000;
   font-weight: 700;
-  padding: 12px 24px;
+  font-size: 1rem;
+  padding: 14px 32px;
   border-radius: 12px;
-  transition: all 0.2s ease;
-  box-shadow: 0 0 20px rgba(247, 147, 26, 0.4);
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 30px rgba(247,147,26,0.35);
+  text-decoration: none;
 }
-
-.btn-primary:hover {
+.btn-orange:hover {
   transform: translateY(-2px);
-  box-shadow: 0 0 30px rgba(247, 147, 26, 0.6);
+  box-shadow: 0 0 50px rgba(247,147,26,0.55);
+}
+.btn-orange:active {
+  transform: translateY(0);
+}
+.btn-orange:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
 }
 
-.text-gradient-btc {
-  background: linear-gradient(135deg, #F7931A, #FFB84D);
+/* Outline button */
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 13px 32px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-outline:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #F7931A 0%, #FFB347 50%, #FFF3E0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.stats-label {
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.875rem;
+/* Stat label */
+.label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: var(--text-muted);
 }
 
-.stats-value {
+/* Input */
+.vault-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  color: #fff;
   font-size: 1.5rem;
   font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.vault-input:focus {
+  border-color: rgba(247,147,26,0.5);
+}
+.vault-input::placeholder {
+  color: rgba(255,255,255,0.2);
+}
+
+/* Badge */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid;
+}
+.badge-orange {
+  color: #F7931A;
+  border-color: rgba(247,147,26,0.3);
+  background: rgba(247,147,26,0.1);
+}
+.badge-blue {
+  color: #60a5fa;
+  border-color: rgba(96,165,250,0.3);
+  background: rgba(96,165,250,0.08);
+}
+.badge-green {
+  color: #4ade80;
+  border-color: rgba(74,222,128,0.3);
+  background: rgba(74,222,128,0.08);
+}
+
+/* Spinner */
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0,0,0,0.3);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Divider */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+}
+
+/* Nav */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 40px;
+  background: rgba(8,8,16,0.8);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Progress bar */
+.progress-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #F7931A, #FFB347);
+  transition: width 0.5s ease;
 }
