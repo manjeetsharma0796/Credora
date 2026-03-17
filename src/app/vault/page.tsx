@@ -7,67 +7,36 @@ import {
   depositSbtc, boostYield, fetchBalances, type Balances,
 } from '@/lib/stacks';
 
-const TICKER_ITEMS = [
-  ['sBTC/BTC', '1.0000', true],
-  ['USDCx/USD', '$1.0000', true],
-  ['VAULT APY', '11.20%', true],
-  ['BORROW RATE', '2.46%', false],
-  ['MAX LEVERAGE', '3×', true],
-  ['LTV RATIO', '65%', false],
-  ['PROTOCOL FEE', '0.30%', false],
-  ['NETWORK', 'TESTNET', false],
-  ['sBTC/BTC', '1.0000', true],
-  ['USDCx/USD', '$1.0000', true],
-  ['VAULT APY', '11.20%', true],
-  ['BORROW RATE', '2.46%', false],
-  ['MAX LEVERAGE', '3×', true],
-  ['LTV RATIO', '65%', false],
-  ['PROTOCOL FEE', '0.30%', false],
-  ['NETWORK', 'TESTNET', false],
+/* ── tiny helpers ── */
+function BlinkDot({ color = '#00d4a0' }: { color?: string }) {
+  return <span style={{ display:'inline-block', width:6, height:6, borderRadius:'50%', background:color, animation:'blink 1.4s step-start infinite', flexShrink:0 }} />;
+}
+
+const STEPS = [
+  { id: 1, code: '01', label: 'Connect Wallet', sub: 'Leather or Xverse' },
+  { id: 2, code: '02', label: 'Deposit sBTC',   sub: 'Choose amount'     },
+  { id: 3, code: '03', label: 'Boost Yield',    sub: '1.5× leverage'    },
+  { id: 4, code: '04', label: 'Claim Rewards',  sub: 'USDCx earnings'   },
 ];
 
-function Ticker() {
-  return (
-    <div style={{ overflow: 'hidden', flex: 1 }}>
-      <div style={{ display: 'flex', gap: 0, animation: 'ticker 30s linear infinite', width: 'max-content' }}>
-        {TICKER_ITEMS.map(([label, val, pos], i) => (
-          <span key={i} style={{
-            display: 'inline-flex', alignItems: 'center', gap: 0,
-            borderRight: '1px solid #1c2235', padding: '0 18px', height: '100%',
-          }}>
-            <span style={{ color: '#3a4560', fontSize: 10, fontFamily: '"DM Mono",monospace', letterSpacing: '0.06em', marginRight: 8 }}>{label as string}</span>
-            <span style={{ color: pos ? '#00d4a0' : '#e0a820', fontSize: 11, fontFamily: '"DM Mono",monospace' }}>{val as string}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function BlinkDot({ color = '#00d4a0' }: { color?: string }) {
-  return <span style={{ display: 'inline-block', width: 6, height: 6, borderRadius: '50%', background: color, animation: 'blink 1.4s step-start infinite', flexShrink: 0 }} />;
-}
-
-type Tab = 'deposit' | 'withdraw';
 type TxStatus = 'idle' | 'pending' | 'success' | 'error';
 
 export default function VaultPage() {
-  const [mounted, setMounted] = useState(false);
-  const [time, setTime] = useState('');
-  const [tab, setTab] = useState<Tab>('deposit');
+  const [mounted, setMounted]     = useState(false);
+  const [time, setTime]           = useState('');
   const [sbtcAmount, setSbtcAmount] = useState('');
-  const [txStatus, setTxStatus] = useState<TxStatus>('idle');
-  const [txHash, setTxHash] = useState('');
-  const [balances, setBalances] = useState<Balances>({ stx: '—', sbtc: '—', usdcx: '—' });
+  const [txStatus, setTxStatus]   = useState<TxStatus>('idle');
+  const [balances, setBalances]   = useState<Balances>({ stx:'—', sbtc:'—', usdcx:'—' });
   const [loadingBal, setLoadingBal] = useState(false);
-  const [apy, setApy] = useState(11.20);
+  const [apy, setApy]             = useState(11.20);
+  const [activeStep, setActiveStep] = useState(1);
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const tick = () => {
       const n = new Date();
-      setTime(n.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+      setTime(n.toLocaleTimeString('en-US', { hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit' }));
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -75,7 +44,7 @@ export default function VaultPage() {
   }, []);
 
   useEffect(() => {
-    const id = setInterval(() => setApy(p => +(p + (Math.random() - 0.5) * 0.04).toFixed(2)), 3000);
+    const id = setInterval(() => setApy(p => +(p + (Math.random()-0.5)*0.04).toFixed(2)), 3000);
     return () => clearInterval(id);
   }, []);
 
@@ -84,413 +53,414 @@ export default function VaultPage() {
     setLoadingBal(true);
     try {
       const addr = userSession.loadUserData().profile.stxAddress.testnet;
-      const b = await fetchBalances(addr);
-      setBalances(b);
-    } finally {
-      setLoadingBal(false);
-    }
+      setBalances(await fetchBalances(addr));
+    } finally { setLoadingBal(false); }
   }, []);
 
   useEffect(() => {
     if (!mounted) return;
-    if (userSession.isUserSignedIn()) loadBalances();
+    if (userSession.isUserSignedIn()) {
+      loadBalances();
+      setActiveStep(2);         // already connected → jump to deposit
+    }
   }, [mounted, loadBalances]);
 
   if (!mounted) return null;
 
   const isConnected = userSession.isUserSignedIn();
-  const address = isConnected ? userSession.loadUserData().profile.stxAddress.testnet : null;
-  const shortAddr = address ? `${address.slice(0, 8)}...${address.slice(-4)}` : null;
+  const address     = isConnected ? userSession.loadUserData().profile.stxAddress.testnet : null;
+  const shortAddr   = address ? `${address.slice(0,6)}…${address.slice(-4)}` : null;
+  const usdVal      = sbtcAmount ? `≈ $${(Number(sbtcAmount)*104000).toLocaleString()}` : '≈ $0';
+  const estYield    = sbtcAmount ? (Number(sbtcAmount)*104000*apy/100).toFixed(0) : '—';
 
-  const usdVal = sbtcAmount ? (Number(sbtcAmount) * 104000).toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }) : '$0';
-  const estimatedYield = sbtcAmount ? (Number(sbtcAmount) * 104000 * apy / 100).toFixed(0) : '0';
+  const handleConnect = () => { authenticate(); };
+  const handleDisconnect = () => { disconnect(); };
 
-  const handleDeposit = async () => {
-    if (!isConnected) { authenticate(); return; }
-    if (!sbtcAmount || Number(sbtcAmount) <= 0) { setTxStatus('error'); return; }
+  const handleBoost = async () => {
+    if (!sbtcAmount || Number(sbtcAmount) <= 0) return;
     setTxStatus('pending');
     try {
       await depositSbtc(Number(sbtcAmount));
       await boostYield(150);
-      setTxHash('pending-confirmation');
       setTxStatus('success');
+      setActiveStep(4);
       setTimeout(loadBalances, 3000);
-    } catch {
-      setTxStatus('error');
-    }
+    } catch { setTxStatus('error'); }
   };
 
-  const handleDisconnect = () => {
-    disconnect();
-  };
+  /* computed current step for auto-advance call-out */
+  const suggestedStep = !isConnected ? 1
+    : (!sbtcAmount || txStatus === 'idle') ? 2
+    : txStatus === 'success' ? 4
+    : 3;
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@600;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
-        html,body{background:#070B14;color:#c8d0e0;font-family:'DM Mono',monospace;overflow-x:hidden;}
+        html,body{background:#070B14;color:#c8d0e0;font-family:'DM Mono',monospace;overflow-x:hidden}
         ::-webkit-scrollbar{width:4px}
-        ::-webkit-scrollbar-track{background:#070B14}
         ::-webkit-scrollbar-thumb{background:#1c2235;border-radius:2px}
-        @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-        @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes spin{to{transform:rotate(360deg)}}
-        .data-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #0f1525}
-        .data-row:last-child{border-bottom:none}
-        .lbl{font-size:10px;color:#3a4560;letter-spacing:0.12em;text-transform:uppercase}
-        .val-green{color:#00d4a0}
-        .val-amber{color:#e0a820}
-        .val-blue{color:#4a9eff}
-        .val-red{color:#f05252}
-        .section-code{font-size:9px;color:#3a4560;letter-spacing:0.14em}
-        .section-title{font-size:11px;color:#5a6585;letter-spacing:0.1em;text-transform:uppercase}
-        .tab-btn{
-          flex:1;padding:10px;border:none;cursor:pointer;
-          font-family:'DM Mono',monospace;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;
-          transition:all 0.2s;background:transparent;
-        }
-        .tab-active{color:#e0a820;border-bottom:1px solid #e0a820;background:rgba(224,168,32,0.04)}
-        .tab-inactive{color:#3a4560;border-bottom:1px solid #111827}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+        /* ── input ── */
         .vault-input{
           width:100%;background:#070B14;border:1px solid #1c2235;
-          color:#c8d0e0;padding:14px 16px;font-family:'DM Mono',monospace;
-          font-size:16px;letter-spacing:0.02em;outline:none;transition:border-color 0.2s;
+          color:#e8edf5;padding:14px 100px 14px 16px;
+          font-family:'DM Mono',monospace;font-size:20px;
+          letter-spacing:0.02em;outline:none;transition:border-color 0.2s;
         }
         .vault-input:focus{border-color:#e0a820}
-        .vault-input::placeholder{color:#3a4560}
-        .btn-cta{
+        .vault-input::placeholder{color:#2a3050}
+
+        /* ── buttons ── */
+        .btn-primary{
           width:100%;padding:15px;border:none;cursor:pointer;
           background:#e0a820;color:#070B14;
           font-family:'DM Mono',monospace;font-size:11px;
-          letter-spacing:0.12em;text-transform:uppercase;font-weight:500;
+          letter-spacing:0.14em;font-weight:500;
           transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:8px;
         }
-        .btn-cta:hover:not(:disabled){background:#f0b830}
-        .btn-cta:disabled{opacity:0.4;cursor:not-allowed}
-        .btn-connect{
-          padding:8px 20px;border:1px solid #e0a820;
-          color:#e0a820;background:transparent;
-          font-family:'DM Mono',monospace;font-size:10px;
-          letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;transition:all 0.2s;
-        }
-        .btn-connect:hover{background:#e0a820;color:#070B14}
-        .spinner{
-          width:12px;height:12px;border:2px solid rgba(7,11,20,0.3);
-          border-top-color:#070B14;border-radius:50%;animation:spin 0.8s linear infinite;
-        }
-        .balance-tag{
-          display:inline-flex;align-items:center;gap:6px;
-          font-size:10px;color:#5a6585;letter-spacing:0.06em;
-          padding:4px 10px;border:1px solid #1c2235;background:#0a0f1e;
-        }
-        .metric-card{background:#0a0f1e;border:1px solid #111827;padding:20px 22px}
+        .btn-primary:hover:not(:disabled){background:#f0b830;transform:translateY(-1px)}
+        .btn-primary:disabled{opacity:0.35;cursor:not-allowed}
+        .spinner{width:12px;height:12px;border:2px solid rgba(7,11,20,0.3);border-top-color:#070B14;border-radius:50%;animation:spin 0.8s linear infinite}
+
+        /* data rows */
+        .dr{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid #0d1320}
+        .dr:last-child{border-bottom:none}
+        .lbl{font-size:10px;color:#3a4560;letter-spacing:0.1em;text-transform:uppercase}
       `}</style>
 
-      {/* ═══ TOP TICKER ═══ */}
-      <div style={{ height: 32, display: 'flex', alignItems: 'center', background: '#06090f', borderBottom: '1px solid #111827' }}>
-        <div style={{ padding: '0 12px', borderRight: '1px solid #1c2235', height: '100%', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <BlinkDot /><span style={{ fontSize: 9, letterSpacing: '0.16em', color: '#3a4560' }}>LIVE</span>
-        </div>
-        <Ticker />
-      </div>
+      <div style={{ display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden' }}>
 
-      {/* ═══ NAV ═══ */}
-      <nav style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        height: 48, borderBottom: '1px solid #111827',
-        background: '#070B14', position: 'sticky', top: 32, zIndex: 100,
-      }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', height: '100%', borderRight: '1px solid #111827', padding: '0 20px', gap: 10, textDecoration: 'none' }}>
-          <div style={{ width: 26, height: 26, background: '#e0a820', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 500, color: '#070B14', clipPath: 'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)' }}>₿</div>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#c8d0e0', letterSpacing: '0.1em' }}>BTCBOOST</div>
-            <div style={{ fontSize: 8, color: '#3a4560', letterSpacing: '0.12em' }}>← BACK TO HOME</div>
+        {/* ── thin top strip ── */}
+        <div style={{ height:28, background:'#06090f', borderBottom:'1px solid #111827', display:'flex', alignItems:'center', justifyContent:'space-between', padding:'0 16px', flexShrink:0 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+            <BlinkDot /><span style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.14em' }}>LIVE · STACKS TESTNET · BUIDL BATTLE #2</span>
           </div>
-        </Link>
-
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%', padding: '0 20px', borderLeft: '1px solid #111827', gap: 8 }}>
-          <span className="section-code">▸ VAULT.DASHBOARD</span>
-          <span className="section-title">sBTC Yield Vault</span>
+          <span style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.1em' }}>{time} UTC</span>
         </div>
 
-        {/* Wallet area */}
-        <div style={{ display: 'flex', alignItems: 'center', height: '100%', gap: 0 }}>
-          {isConnected ? (
-            <>
-              {/* Balance tags */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 16px', borderLeft: '1px solid #111827' }}>
-                <div className="balance-tag">
-                  <span style={{ color: '#e0a820' }}>₿</span>
-                  <span>{loadingBal ? '...' : balances.sbtc}</span>
-                  <span style={{ color: '#3a4560' }}>sBTC</span>
-                </div>
-                <div className="balance-tag">
-                  <span style={{ color: '#4a9eff' }}>$</span>
-                  <span>{loadingBal ? '...' : balances.usdcx}</span>
-                  <span style={{ color: '#3a4560' }}>USDCx</span>
-                </div>
-                <div className="balance-tag">
-                  <span style={{ color: '#00d4a0' }}>◈</span>
-                  <span>{loadingBal ? '...' : balances.stx}</span>
-                  <span style={{ color: '#3a4560' }}>STX</span>
-                </div>
-              </div>
-              <div style={{ padding: '0 16px', borderLeft: '1px solid #111827', height: '100%', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <BlinkDot color="#00d4a0" />
-                <span style={{ fontSize: 10, color: '#5a6585', letterSpacing: '0.06em', fontFamily: '"DM Mono",monospace' }}>{shortAddr}</span>
-              </div>
-              <button onClick={handleDisconnect} style={{ height: '100%', padding: '0 16px', borderLeft: '1px solid #111827', background: 'none', border: 'none', borderLeft: '1px solid #111827', color: '#3a4560', fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer', transition: 'color 0.2s', fontFamily: '"DM Mono",monospace' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#f05252')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#3a4560')}>
-                DISCONNECT
-              </button>
-            </>
-          ) : (
-            <>
-              <div style={{ padding: '0 16px', borderLeft: '1px solid #111827', fontSize: 9, color: '#3a4560', letterSpacing: '0.1em' }}>
-                {time} UTC
-              </div>
-              <button onClick={authenticate} style={{ height: '100%', padding: '0 24px', background: '#e0a820', color: '#070B14', border: 'none', borderLeft: '1px solid #1c2235', fontSize: 10, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', fontFamily: '"DM Mono",monospace', transition: 'background 0.2s' }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#f0b830')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#e0a820')}>
-                CONNECT WALLET →
-              </button>
-            </>
-          )}
-        </div>
-      </nav>
+        <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
 
-      {/* ═══ MAIN LAYOUT ═══ */}
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', minHeight: 'calc(100vh - 80px)' }}>
+          {/* ════════════════════════════════════
+              LEFT SIDEBAR
+          ════════════════════════════════════ */}
+          <aside style={{ width:220, borderRight:'1px solid #111827', display:'flex', flexDirection:'column', flexShrink:0, background:'#070B14' }}>
 
-        {/* ─── LEFT: Deposit Panel ─── */}
-        <div style={{ borderRight: '1px solid #111827', display: 'flex', flexDirection: 'column' }}>
-
-          {/* Panel header */}
-          <div style={{ padding: '12px 20px', borderBottom: '1px solid #111827', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="section-code">▸ INPUT.001</span>
-              <span className="section-title">Open Position</span>
-            </div>
-            <div style={{ display: 'flex', gap: 0, flex: 1, marginLeft: 16 }}>
-              {(['deposit', 'withdraw'] as Tab[]).map(t => (
-                <button key={t} onClick={() => setTab(t)} className={`tab-btn ${tab === t ? 'tab-active' : 'tab-inactive'}`}>{t.toUpperCase()}</button>
-              ))}
-            </div>
-          </div>
-
-          {tab === 'deposit' ? (
-            <div style={{ padding: '24px 20px', flex: 1, display: 'flex', flexDirection: 'column', gap: 20 }}>
-
-              {/* Amount input */}
+            {/* Logo */}
+            <Link href="/" style={{ display:'flex', alignItems:'center', gap:10, padding:'18px 20px', borderBottom:'1px solid #111827', textDecoration:'none' }}>
+              <div style={{ width:28, height:28, background:'#e0a820', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:500, color:'#070B14', clipPath:'polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)', flexShrink:0 }}>₿</div>
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span className="lbl">Amount</span>
-                  {isConnected && <span style={{ fontSize: 10, color: '#3a4560' }}>BAL: <span style={{ color: '#e0a820' }}>{balances.sbtc} sBTC</span></span>}
-                </div>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    className="vault-input"
-                    type="number"
-                    placeholder="0.00000000"
-                    value={sbtcAmount}
-                    onChange={e => setSbtcAmount(e.target.value)}
-                  />
-                  <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', display: 'flex', alignItems: 'center', gap: 0 }}>
-                    <span style={{ padding: '0 12px', fontSize: 10, color: '#e0a820', borderLeft: '1px solid #1c2235', height: '100%', display: 'flex', alignItems: 'center', letterSpacing: '0.1em' }}>sBTC</span>
-                    <button onClick={() => setSbtcAmount('0.1')} style={{ padding: '0 12px', height: '100%', background: '#0a0f1e', border: 'none', borderLeft: '1px solid #1c2235', color: '#3a4560', fontSize: 9, letterSpacing: '0.1em', cursor: 'pointer', fontFamily: '"DM Mono",monospace', transition: 'color 0.2s' }}
-                      onMouseEnter={e => (e.currentTarget.style.color = '#e0a820')}
-                      onMouseLeave={e => (e.currentTarget.style.color = '#3a4560')}>
-                      MAX
-                    </button>
+                <div style={{ fontSize:11, color:'#c8d0e0', letterSpacing:'0.1em', fontWeight:500 }}>BTCBOOST</div>
+                <div style={{ fontSize:8, color:'#3a4560', letterSpacing:'0.1em' }}>sBTC YIELD VAULT</div>
+              </div>
+            </Link>
+
+            {/* Navigation label */}
+            <div style={{ padding:'14px 20px 8px', fontSize:9, color:'#3a4560', letterSpacing:'0.18em' }}>STEPS TO EARN</div>
+
+            {/* Step nav */}
+            <nav style={{ flex:1 }}>
+              {STEPS.map(step => {
+                const isDone = isConnected && step.id === 1
+                  ? true
+                  : txStatus === 'success' && step.id <= 3;
+                const isActive = activeStep === step.id;
+                const isSuggested = suggestedStep === step.id && !isActive;
+                const reachable = isConnected || step.id === 1;
+
+                return (
+                  <button
+                    key={step.id}
+                    onClick={() => reachable && setActiveStep(step.id)}
+                    style={{
+                      width:'100%', background:'none', border:'none',
+                      borderBottom:'1px solid #111827',
+                      padding:'14px 20px',
+                      display:'flex', alignItems:'center', gap:12,
+                      cursor: reachable ? 'pointer' : 'default',
+                      transition:'background 0.15s',
+                      background: isActive ? 'rgba(224,168,32,0.06)' : 'transparent',
+                      borderLeft: isActive ? '2px solid #e0a820' : '2px solid transparent',
+                      textAlign:'left',
+                    }}
+                  >
+                    {/* Step circle */}
+                    <div style={{
+                      width:28, height:28, borderRadius:'50%', flexShrink:0,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      border: `1px solid ${isDone ? '#00d4a0' : isActive ? '#e0a820' : '#1c2235'}`,
+                      background: isDone ? 'rgba(0,212,160,0.1)' : isActive ? 'rgba(224,168,32,0.1)' : 'transparent',
+                      fontSize:10, fontWeight:500,
+                      color: isDone ? '#00d4a0' : isActive ? '#e0a820' : '#3a4560',
+                    }}>
+                      {isDone ? '✓' : step.code}
+                    </div>
+                    <div>
+                      <div style={{ fontSize:11, color: isActive ? '#e8edf5' : reachable ? '#8a95a8' : '#3a4560', letterSpacing:'0.04em', marginBottom:2 }}>{step.label}</div>
+                      <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.08em' }}>{step.sub}</div>
+                    </div>
+                    {isSuggested && <div style={{ marginLeft:'auto', fontSize:8, color:'#e0a820', letterSpacing:'0.1em' }}>NEXT→</div>}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Wallet area at bottom */}
+            <div style={{ borderTop:'1px solid #111827', padding:16 }}>
+              {isConnected ? (
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:12 }}>
+                    <BlinkDot />
+                    <span style={{ fontSize:9, color:'#00d4a0', letterSpacing:'0.08em' }}>CONNECTED</span>
                   </div>
-                </div>
-                <div style={{ marginTop: 6, fontSize: 10, color: '#3a4560' }}>≈ {usdVal}</div>
-              </div>
-
-              {/* Separator */}
-              <div style={{ height: 1, background: '#111827' }} />
-
-              {/* Position details */}
-              <div>
-                <div style={{ marginBottom: 12, fontSize: 9, color: '#3a4560', letterSpacing: '0.14em' }}>POSITION DETAILS</div>
-                {[
-                  { k: 'Leverage', v: '1.5×', c: 'val-amber' },
-                  { k: 'Estimated APY', v: `${apy.toFixed(2)}%`, c: 'val-green' },
-                  { k: 'Est. USDCx / yr', v: sbtcAmount ? `${estimatedYield} USDCx` : '—', c: '' },
-                  { k: 'Borrow Rate', v: '2.46%', c: '' },
-                  { k: 'Protocol Fee', v: '0.30%', c: '' },
-                  { k: 'Max Leverage', v: '3.00×', c: 'val-amber' },
-                ].map(r => (
-                  <div key={r.k} className="data-row">
-                    <span className="lbl">{r.k}</span>
-                    <span className={r.c} style={{ fontSize: 12, color: r.c ? undefined : '#c8d0e0' }}>{r.v}</span>
+                  <div style={{ fontSize:9, color:'#5a6585', letterSpacing:'0.06em', marginBottom:10, fontFamily:'"DM Mono",monospace' }}>{shortAddr}</div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:12 }}>
+                    {[
+                      { icon:'₿', label:'sBTC', val:balances.sbtc, color:'#e0a820' },
+                      { icon:'$', label:'USDCx', val:balances.usdcx, color:'#4a9eff' },
+                      { icon:'◈', label:'STX', val:balances.stx, color:'#00d4a0' },
+                    ].map(b => (
+                      <div key={b.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'6px 10px', background:'#0a0f1e', border:'1px solid #111827' }}>
+                        <span style={{ fontSize:9, color:b.color }}>{b.icon} {b.label}</span>
+                        <span style={{ fontSize:10, color:'#c8d0e0' }}>{loadingBal ? '…' : b.val}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-
-              {/* Status messages */}
-              {txStatus === 'success' && (
-                <div style={{ background: 'rgba(0,212,160,0.06)', border: '1px solid rgba(0,212,160,0.2)', padding: '12px 14px', fontSize: 10, color: '#00d4a0', letterSpacing: '0.08em', animation: 'fadeIn 0.3s ease' }}>
-                  ✓ TRANSACTION BROADCAST — AWAITING CONFIRMATION
+                  <button onClick={handleDisconnect} style={{ width:'100%', padding:'9px', border:'1px solid #1c2235', background:'transparent', color:'#5a6585', fontSize:9, letterSpacing:'0.12em', cursor:'pointer', fontFamily:'"DM Mono",monospace', transition:'all 0.2s' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor='#f05252'; (e.currentTarget as HTMLElement).style.color='#f05252'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor='#1c2235'; (e.currentTarget as HTMLElement).style.color='#5a6585'; }}>
+                    DISCONNECT
+                  </button>
                 </div>
-              )}
-              {txStatus === 'error' && (
-                <div style={{ background: 'rgba(240,82,82,0.06)', border: '1px solid rgba(240,82,82,0.2)', padding: '12px 14px', fontSize: 10, color: '#f05252', letterSpacing: '0.08em' }}>
-                  ✗ CHECK WALLET AND RETRY
-                </div>
-              )}
-
-              {/* CTA */}
-              <button onClick={handleDeposit} disabled={txStatus === 'pending'} className="btn-cta" style={{ marginTop: 'auto' }}>
-                {txStatus === 'pending' ? (
-                  <><div className="spinner" />BROADCASTING...</>
-                ) : isConnected ? 'DEPOSIT & BOOST →' : 'CONNECT WALLET TO OPEN POSITION'}
-              </button>
-
-              <div style={{ textAlign: 'center', fontSize: 9, color: '#3a4560', letterSpacing: '0.1em' }}>
-                SECURED BY STACKS CLARITY CONTRACTS · TESTNET
-              </div>
-            </div>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 32 }}>
-              <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.14em', marginBottom: 8 }}>WITHDRAW.002</div>
-              <div style={{ fontSize: 13, color: '#5a6585' }}>No active position</div>
-              <div style={{ fontSize: 10, color: '#3a4560', textAlign: 'center', lineHeight: 1.8 }}>Deposit sBTC first to open<br />a leveraged position</div>
-              <button onClick={() => setTab('deposit')} style={{ marginTop: 8, padding: '8px 20px', border: '1px solid #1c2235', background: 'none', color: '#5a6585', fontSize: 10, letterSpacing: '0.1em', cursor: 'pointer', fontFamily: '"DM Mono",monospace' }}>
-                ← BACK TO DEPOSIT
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* ─── RIGHT: Dashboard ─── */}
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-
-          {/* Row 1: Position + Yield */}
-          <div style={{ borderBottom: '1px solid #111827', display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
-
-            {/* My Position */}
-            <div style={{ borderRight: '1px solid #111827', padding: 0 }}>
-              <div style={{ padding: '12px 20px', borderBottom: '1px solid #111827', display: 'flex', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="section-code">▸ POS.001</span>
-                  <span className="section-title">My Position</span>
-                </div>
-                {isConnected && <button onClick={loadBalances} style={{ fontSize: 9, color: '#3a4560', background: 'none', border: 'none', cursor: 'pointer', letterSpacing: '0.1em', fontFamily: '"DM Mono",monospace' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#00d4a0')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#3a4560')}>
-                  ↻ REFRESH
-                </button>}
-              </div>
-              <div style={{ padding: '0 20px' }}>
-                {[
-                  { k: 'sBTC Deposited', v: isConnected ? `${balances.sbtc} sBTC` : '—', c: 'val-amber' },
-                  { k: 'Borrowed USDCx', v: isConnected ? `${balances.usdcx} USDCx` : '—', c: 'val-blue' },
-                  { k: 'Active Leverage', v: '1.5×', c: 'val-amber' },
-                  { k: 'Health Factor', v: '∞', c: 'val-green' },
-                  { k: 'STX Balance', v: isConnected ? `${balances.stx} STX` : '—', c: '' },
-                ].map(r => (
-                  <div key={r.k} className="data-row">
-                    <span className="lbl">{r.k}</span>
-                    <span className={r.c} style={{ fontSize: 12, color: r.c ? undefined : '#c8d0e0' }}>{loadingBal ? '...' : r.v}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Accrued Yield */}
-            <div>
-              <div style={{ padding: '12px 20px', borderBottom: '1px solid #111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="section-code">▸ YIELD.002</span>
-                <span className="section-title">Accrued Yield</span>
-              </div>
-              <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.14em', marginBottom: 8 }}>CLAIMABLE NOW</div>
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10 }}>
-                  <span style={{ fontFamily: '"DM Mono",monospace', fontSize: 38, fontWeight: 300, color: '#00d4a0', letterSpacing: '-0.03em', lineHeight: 1 }}>0.00</span>
-                  <span style={{ fontSize: 13, color: '#3a4560', paddingBottom: 4, letterSpacing: '0.06em' }}>USDCx</span>
-                </div>
-                <div style={{ fontSize: 10, color: '#3a4560', marginBottom: 16 }}>≈ $0.00 USD</div>
-                <button disabled style={{ padding: '10px 20px', border: '1px solid #1c2235', background: 'none', color: '#3a4560', fontSize: 10, letterSpacing: '0.1em', fontFamily: '"DM Mono",monospace', cursor: 'not-allowed', opacity: 0.4 }}>
-                  CLAIM REWARDS (NO BALANCE)
+              ) : (
+                <button onClick={handleConnect} style={{ width:'100%', padding:'13px', background:'#e0a820', border:'none', color:'#070B14', fontSize:10, fontWeight:500, letterSpacing:'0.12em', cursor:'pointer', fontFamily:'"DM Mono",monospace', transition:'background 0.2s' }}
+                  onMouseEnter={e => (e.currentTarget.style.background='#f0b830')}
+                  onMouseLeave={e => (e.currentTarget.style.background='#e0a820')}>
+                  CONNECT WALLET
                 </button>
-                <div style={{ marginTop: 12, height: 1, background: '#111827' }} />
-                <div style={{ marginTop: 12, display: 'flex', justifyContent: 'space-between' }}>
-                  <span className="lbl">Lifetime Earned</span>
-                  <span style={{ fontSize: 11, color: '#c8d0e0' }}>0.00 USDCx</span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span className="lbl">Last Block Update</span>
-                  <span style={{ fontSize: 11, color: '#c8d0e0' }}>#147,823</span>
-                </div>
+              )}
+            </div>
+          </aside>
+
+          {/* ════════════════════════════════════
+              MAIN CONTENT
+          ════════════════════════════════════ */}
+          <main style={{ flex:1, overflowY:'auto', display:'flex', flexDirection:'column' }}>
+
+            {/* Top bar */}
+            <div style={{ padding:'14px 28px', borderBottom:'1px solid #111827', display:'flex', justifyContent:'space-between', alignItems:'center', flexShrink:0 }}>
+              <div>
+                <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.16em', marginBottom:4 }}>▸ VAULT.DASHBOARD</div>
+                <div style={{ fontFamily:'"Space Grotesk",sans-serif', fontSize:18, fontWeight:700, color:'#e8edf5', letterSpacing:'-0.02em' }}>sBTC Yield Vault</div>
+              </div>
+              <div style={{ display:'flex', gap:4 }}>
+                {STEPS.map(s => (
+                  <div key={s.id} style={{ width:28, height:4, borderRadius:2, background: s.id <= suggestedStep ? '#e0a820' : '#1c2235', transition:'background 0.3s' }} />
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Row 2: Loop Stats */}
-          <div style={{ borderBottom: '1px solid #111827' }}>
-            <div style={{ padding: '12px 20px', borderBottom: '1px solid #111827', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span className="section-code">▸ LOOP.003</span>
-              <span className="section-title">Loop Statistics</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 1, background: '#111827' }}>
+            {/* ── 3 KPI cards (PPN.fi top row) ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:1, background:'#111827', padding:0, flexShrink:0 }}>
               {[
-                { k: 'TOTAL BORROWED', v: '0.00 USDCx', c: '' },
-                { k: 'UTILIZATION', v: '0%', c: '' },
-                { k: 'LOOP ROUNDS', v: '0', c: '' },
-                { k: 'LIVE APY', v: `${apy.toFixed(2)}%`, c: 'val-green' },
-              ].map(s => (
-                <div key={s.k} style={{ background: '#070B14', padding: '20px 16px' }}>
-                  <div className="lbl" style={{ marginBottom: 8 }}>{s.k}</div>
-                  <div className={s.c} style={{ fontSize: 18, fontWeight: 300, color: s.c ? undefined : '#c8d0e0' }}>{s.v}</div>
+                { code:'APY', label:'Vault Net APY', value:`${apy.toFixed(2)}%`, sub:'at 1.5× leverage', color:'#00d4a0', icon:'📈' },
+                { code:'TVL', label:'Your Position', value: isConnected ? `${balances.sbtc} sBTC` : '—', sub: isConnected ? `USDCx earned: ${balances.usdcx}` : 'Connect wallet', color:'#e0a820', icon:'🔒' },
+                { code:'YLD', label:'Accrued Yield', value:'0.00', sub:'USDCx claimable', color:'#4a9eff', icon:'💰' },
+              ].map(c => (
+                <div key={c.code} style={{ background:'#0a0f1e', padding:'24px 24px' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:12 }}>
+                    <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.14em' }}>{c.label.toUpperCase()}</div>
+                    <span style={{ fontSize:18 }}>{c.icon}</span>
+                  </div>
+                  <div style={{ fontFamily:'"DM Mono",monospace', fontSize:28, fontWeight:300, color:c.color, letterSpacing:'-0.02em', lineHeight:1, marginBottom:6 }}>{c.value}</div>
+                  <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.1em' }}>{c.sub}</div>
                 </div>
               ))}
             </div>
-            {/* Progress bar */}
-            <div style={{ padding: '16px 20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span className="lbl">Leverage Utilization</span>
-                <span style={{ fontSize: 10, color: '#e0a820', letterSpacing: '0.08em' }}>1.5× / 3.0× MAX</span>
-              </div>
-              <div style={{ height: 4, background: '#0f1525', borderRadius: 0 }}>
-                <div style={{ height: '100%', width: '0%', background: 'linear-gradient(90deg, #e0a820, #f0b830)', transition: 'width 0.5s' }} />
-              </div>
-            </div>
-          </div>
 
-          {/* Row 3: Protocol info */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 1, background: '#111827', flex: 1 }}>
-            {[
-              { code: 'NET.001', title: 'Network', rows: [['Chain', 'Stacks L2'], ['Bitcoin', 'Finality'], ['Environment', 'Testnet']] },
-              { code: 'TOK.002', title: 'Tokens', rows: [['Collateral', 'sBTC'], ['Reward', 'USDCx'], ['Fee', '0.30%']] },
-              { code: 'SEC.003', title: 'Security', rows: [['Contract', 'Clarity'], ['LTV Max', '65%'], ['Audit', 'Pending']] },
-            ].map(p => (
-              <div key={p.code} style={{ background: '#070B14', padding: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                  <span className="section-code">▸ {p.code}</span>
-                  <span className="section-title">{p.title}</span>
-                </div>
-                {p.rows.map(([k, v]) => (
-                  <div key={k} className="data-row" style={{ padding: '7px 0' }}>
-                    <span className="lbl">{k}</span>
-                    <span style={{ fontSize: 11, color: '#c8d0e0' }}>{v}</span>
+            {/* ── Active Step Panel ── */}
+            <div style={{ flex:1, padding:28, animation:'fadeUp 0.3s ease' }}>
+
+              {/* ── STEP 1: Connect ── */}
+              {activeStep === 1 && (
+                <div style={{ maxWidth:520, margin:'0 auto' }}>
+                  <div style={{ fontSize:9, color:'#e0a820', letterSpacing:'0.18em', marginBottom:12 }}>▸ STEP 01 / FIRST THINGS FIRST</div>
+                  <div style={{ fontFamily:'"Space Grotesk",sans-serif', fontSize:26, fontWeight:700, color:'#e8edf5', marginBottom:10, letterSpacing:'-0.02em' }}>Connect your wallet</div>
+                  <p style={{ fontSize:12, color:'#5a6585', lineHeight:1.8, marginBottom:28 }}>
+                    Use <span style={{ color:'#e0a820' }}>Leather</span> or <span style={{ color:'#e0a820' }}>Xverse</span> — the two most popular Stacks wallets. Your Bitcoin stays in your wallet; you only authorize the vault to work with it.
+                  </p>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, background:'#111827', marginBottom:28 }}>
+                    {[
+                      { name:'Leather', icon:'🔑', desc:'The original Stacks wallet. Open-source and battle-tested.' },
+                      { name:'Xverse', icon:'⚡', desc:'Mobile-first Stacks wallet. Great for beginners.' },
+                    ].map(w => (
+                      <div key={w.name} style={{ background:'#0a0f1e', padding:20 }}>
+                        <div style={{ fontSize:22, marginBottom:10 }}>{w.icon}</div>
+                        <div style={{ fontSize:13, color:'#c8d0e0', marginBottom:6, letterSpacing:'0.04em' }}>{w.name}</div>
+                        <div style={{ fontSize:11, color:'#4a5568', lineHeight:1.6 }}>{w.desc}</div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+                  <button onClick={handleConnect} className="btn-primary">CONNECT WALLET →</button>
+                  <div style={{ marginTop:12, fontSize:9, color:'#3a4560', textAlign:'center', letterSpacing:'0.1em' }}>NO PRIVATE KEY REQUIRED · READ-ONLY CONNECTION</div>
+                </div>
+              )}
 
-      {/* ═══ BOTTOM TICKER ═══ */}
-      <div style={{ height: 32, display: 'flex', alignItems: 'center', background: '#06090f', borderTop: '1px solid #111827' }}>
-        <div style={{ padding: '0 12px', borderRight: '1px solid #1c2235', height: '100%', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 9, letterSpacing: '0.14em', color: '#3a4560' }}>SYS</span>
+              {/* ── STEP 2: Deposit ── */}
+              {activeStep === 2 && (
+                <div style={{ maxWidth:520, margin:'0 auto' }}>
+                  <div style={{ fontSize:9, color:'#e0a820', letterSpacing:'0.18em', marginBottom:12 }}>▸ STEP 02 / OPEN POSITION</div>
+                  <div style={{ fontFamily:'"Space Grotesk",sans-serif', fontSize:26, fontWeight:700, color:'#e8edf5', marginBottom:10, letterSpacing:'-0.02em' }}>Deposit sBTC</div>
+                  <p style={{ fontSize:12, color:'#5a6585', lineHeight:1.8, marginBottom:28 }}>
+                    Enter how much sBTC you want to put to work. The vault will use it as collateral to borrow USDCx and earn yield — <span style={{ color:'#e0a820' }}>your sBTC is never sold.</span>
+                  </p>
+
+                  {/* Input */}
+                  <div style={{ marginBottom:20 }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom:8 }}>
+                      <span className="lbl">Amount to deposit</span>
+                      <span style={{ fontSize:10, color:'#3a4560' }}>
+                        BAL: <span style={{ color:'#e0a820' }}>{balances.sbtc} sBTC</span>
+                      </span>
+                    </div>
+                    <div style={{ position:'relative' }}>
+                      <input
+                        className="vault-input"
+                        type="number"
+                        placeholder="0.00000000"
+                        value={sbtcAmount}
+                        onChange={e => setSbtcAmount(e.target.value)}
+                      />
+                      <div style={{ position:'absolute', right:0, top:0, height:'100%', display:'flex' }}>
+                        <span style={{ padding:'0 14px', display:'flex', alignItems:'center', fontSize:11, color:'#e0a820', borderLeft:'1px solid #1c2235', letterSpacing:'0.08em' }}>sBTC</span>
+                        <button onClick={() => setSbtcAmount('0.1')} style={{ padding:'0 12px', background:'#0a0f1e', border:'none', borderLeft:'1px solid #1c2235', color:'#5a6585', fontSize:9, letterSpacing:'0.1em', cursor:'pointer', fontFamily:'"DM Mono",monospace', transition:'color 0.2s' }}
+                          onMouseEnter={e => (e.currentTarget.style.color='#e0a820')}
+                          onMouseLeave={e => (e.currentTarget.style.color='#5a6585')}>MAX</button>
+                      </div>
+                    </div>
+                    <div style={{ marginTop:6, fontSize:10, color:'#3a4560', letterSpacing:'0.06em' }}>{usdVal}</div>
+                  </div>
+
+                  {/* Preview box */}
+                  {sbtcAmount && Number(sbtcAmount) > 0 && (
+                    <div style={{ background:'#0a0f1e', border:'1px solid #111827', padding:'16px 20px', marginBottom:20, animation:'fadeUp 0.2s ease' }}>
+                      <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.14em', marginBottom:12 }}>POSITION PREVIEW</div>
+                      {[
+                        { k:'Leverage Factor', v:'1.5×', c:'#e0a820' },
+                        { k:'Estimated APY', v:`${apy.toFixed(2)}%`, c:'#00d4a0' },
+                        { k:'Est. USDCx / year', v:`${estYield} USDCx`, c:'#4a9eff' },
+                        { k:'Protocol Fee', v:'0.30%', c:'' },
+                      ].map(r => (
+                        <div key={r.k} className="dr">
+                          <span className="lbl">{r.k}</span>
+                          <span style={{ fontSize:12, color:r.c || '#c8d0e0' }}>{r.v}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => { if (sbtcAmount && Number(sbtcAmount) > 0) setActiveStep(3); }}
+                    disabled={!sbtcAmount || Number(sbtcAmount) <= 0}
+                    className="btn-primary"
+                  >
+                    CONTINUE TO BOOST →
+                  </button>
+                </div>
+              )}
+
+              {/* ── STEP 3: Boost ── */}
+              {activeStep === 3 && (
+                <div style={{ maxWidth:520, margin:'0 auto' }}>
+                  <div style={{ fontSize:9, color:'#e0a820', letterSpacing:'0.18em', marginBottom:12 }}>▸ STEP 03 / REVIEW & BOOST</div>
+                  <div style={{ fontFamily:'"Space Grotesk",sans-serif', fontSize:26, fontWeight:700, color:'#e8edf5', marginBottom:10, letterSpacing:'-0.02em' }}>Confirm & Boost Yield</div>
+                  <p style={{ fontSize:12, color:'#5a6585', lineHeight:1.8, marginBottom:24 }}>
+                    Review your position one last time. When you click <span style={{ color:'#e0a820' }}>Boost &amp; Earn</span>, your wallet will ask you to sign two transactions — one to deposit sBTC and one to activate the leverage loop.
+                  </p>
+
+                  {/* Summary */}
+                  <div style={{ background:'#0a0f1e', border:'1px solid #1c2235', padding:'20px', marginBottom:20 }}>
+                    <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.14em', marginBottom:14 }}>TRANSACTION SUMMARY</div>
+                    {[
+                      { k:'Depositing', v:`${sbtcAmount} sBTC`, c:'#e0a820', big:true },
+                      { k:'≈ USD Value', v:usdVal, c:'' },
+                      { k:'Leverage', v:'1.5×', c:'#e0a820' },
+                      { k:'Estimated APY', v:`${apy.toFixed(2)}%`, c:'#00d4a0' },
+                      { k:'Est. Yearly Yield', v:`${estYield} USDCx`, c:'#4a9eff' },
+                      { k:'Protocol', v:'Stacks Testnet', c:'' },
+                    ].map(r => (
+                      <div key={r.k} className="dr">
+                        <span className="lbl">{r.k}</span>
+                        <span style={{ fontSize: r.big ? 15 : 12, color:r.c || '#c8d0e0', fontWeight: r.big ? 500 : 300 }}>{r.v}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {txStatus === 'error' && (
+                    <div style={{ background:'rgba(240,82,82,0.07)', border:'1px solid rgba(240,82,82,0.2)', padding:'12px 16px', marginBottom:16, fontSize:10, color:'#f05252', letterSpacing:'0.08em' }}>
+                      ✗ TRANSACTION REJECTED — CHECK WALLET AND RETRY
+                    </div>
+                  )}
+
+                  <button onClick={handleBoost} disabled={txStatus==='pending'} className="btn-primary">
+                    {txStatus==='pending'
+                      ? <><div className="spinner" />BROADCASTING TRANSACTION…</>
+                      : 'BOOST & EARN →'}
+                  </button>
+                  <button onClick={() => setActiveStep(2)} style={{ marginTop:10, width:'100%', padding:'11px', border:'1px solid #1c2235', background:'transparent', color:'#5a6585', fontSize:10, letterSpacing:'0.1em', cursor:'pointer', fontFamily:'"DM Mono",monospace', transition:'all 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget.style.color='#c8d0e0')}
+                    onMouseLeave={e => (e.currentTarget.style.color='#5a6585')} >
+                    ← EDIT AMOUNT
+                  </button>
+                </div>
+              )}
+
+              {/* ── STEP 4: Claim ── */}
+              {activeStep === 4 && (
+                <div style={{ maxWidth:520, margin:'0 auto' }}>
+                  <div style={{ fontSize:9, color:'#00d4a0', letterSpacing:'0.18em', marginBottom:12 }}>▸ STEP 04 / REWARDS</div>
+                  <div style={{ fontFamily:'"Space Grotesk",sans-serif', fontSize:26, fontWeight:700, color:'#e8edf5', marginBottom:10, letterSpacing:'-0.02em' }}>Your Yield is Accruing</div>
+                  <p style={{ fontSize:12, color:'#5a6585', lineHeight:1.8, marginBottom:24 }}>
+                    {txStatus === 'success'
+                      ? 'Transaction broadcast — great! The vault is now looping your sBTC to generate USDCx. Rewards accrue every ~10 minutes (one Stacks block).'
+                      : 'Once you complete the deposit & boost step, USDCx rewards will appear here in real time.'
+                    }
+                  </p>
+
+                  {txStatus === 'success' && (
+                    <div style={{ background:'rgba(0,212,160,0.06)', border:'1px solid rgba(0,212,160,0.2)', padding:'16px 20px', marginBottom:24, animation:'fadeUp 0.3s ease' }}>
+                      <div style={{ fontSize:9, color:'#00d4a0', letterSpacing:'0.12em', marginBottom:8 }}>✓ POSITION ACTIVE</div>
+                      <div style={{ fontSize:11, color:'#5a6585', lineHeight:1.7 }}>
+                        Your sBTC is now earning leveraged yield. Come back any time to check your USDCx balance and claim rewards.
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Yield display */}
+                  <div style={{ background:'#0a0f1e', border:'1px solid #111827', padding:'24px 20px', marginBottom:20, textAlign:'center' }}>
+                    <div style={{ fontSize:9, color:'#3a4560', letterSpacing:'0.14em', marginBottom:10 }}>CLAIMABLE NOW</div>
+                    <div style={{ fontFamily:'"DM Mono",monospace', fontSize:44, fontWeight:300, color:'#00d4a0', letterSpacing:'-0.03em', lineHeight:1, marginBottom:6 }}>0.00</div>
+                    <div style={{ fontSize:12, color:'#3a4560' }}>USDCx ≈ $0.00</div>
+                  </div>
+
+                  <button disabled className="btn-primary" style={{ marginBottom:10, opacity:0.35 }}>
+                    CLAIM REWARDS (NO BALANCE YET)
+                  </button>
+                  <button onClick={loadBalances} style={{ width:'100%', padding:'11px', border:'1px solid #1c2235', background:'transparent', color:'#5a6585', fontSize:10, letterSpacing:'0.1em', cursor:'pointer', fontFamily:'"DM Mono",monospace', transition:'color 0.2s' }}
+                    onMouseEnter={e => (e.currentTarget.style.color='#c8d0e0')}
+                    onMouseLeave={e => (e.currentTarget.style.color='#5a6585')}>
+                    ↻ REFRESH BALANCES
+                  </button>
+                </div>
+              )}
+            </div>
+          </main>
         </div>
-        <Ticker />
       </div>
     </>
   );
