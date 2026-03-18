@@ -67,7 +67,7 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <>
+    <div style={{ background: '#070B14', minHeight: '100vh', padding: '0 80px' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
@@ -416,6 +416,6 @@ export default function LandingPage() {
         </div>
         <Ticker speed={28} />
       </div>
-    </>
+    </div>
   );
 }
