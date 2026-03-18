@@ -31,9 +31,9 @@ function Ticker({ reverse = false, speed = 35 }: { reverse?: boolean; speed?: nu
             borderRight: '1px solid #1c2235',
             padding: '0 20px', height: '100%',
           }}>
-            <span style={{ color: '#5a6585', fontSize: 10, fontFamily: '"DM Mono",monospace', letterSpacing: '0.06em', marginRight: 8 }}>{t.label}</span>
+            <span style={{ color: '#a1a1aa', fontSize: 10, fontFamily: '"DM Mono",monospace', letterSpacing: '0.06em', marginRight: 8 }}>{t.label}</span>
             <span style={{ color: t.pos ? '#00d4a0' : '#e0a820', fontSize: 11, fontFamily: '"DM Mono",monospace', fontWeight: 500, marginRight: 6 }}>{t.val}</span>
-            <span style={{ color: '#3a4560', fontSize: 10, fontFamily: '"DM Mono",monospace' }}>{t.chg}</span>
+            <span style={{ color: '#8b949e', fontSize: 10, fontFamily: '"DM Mono",monospace' }}>{t.chg}</span>
           </span>
         ))}
       </div>
@@ -72,7 +72,7 @@ export default function LandingPage() {
         @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Space+Grotesk:wght@500;600;700&display=swap');
         *{margin:0;padding:0;box-sizing:border-box}
         html,body{
-          background:#070B14;color:#c8d0e0;
+          background:#070B14;color:#f1f5f9;
           font-family:'DM Mono',monospace;overflow-x:hidden;
         }
         ::-webkit-scrollbar{width:4px}
@@ -89,9 +89,9 @@ export default function LandingPage() {
         .panel-sm{background:#0a0f1e;border:1px solid #111827;padding:16px 20px}
         .data-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #0f1525}
         .data-row:last-child{border-bottom:none}
-        .lbl{font-size:10px;color:#3a4560;letter-spacing:0.12em;text-transform:uppercase}
-        .val{font-size:13px;color:#c8d0e0;font-weight:500}
-        .val-big{font-size:22px;color:#c8d0e0;font-weight:500;letter-spacing:-0.02em}
+        .lbl{font-size:10px;color:#8b949e;letter-spacing:0.12em;text-transform:uppercase}
+        .val{font-size:13px;color:#f1f5f9;font-weight:500}
+        .val-big{font-size:22px;color:#f1f5f9;font-weight:500;letter-spacing:-0.02em}
         .val-green{color:#00d4a0}
         .val-amber{color:#e0a820}
         .val-blue{color:#4a9eff}
@@ -104,8 +104,8 @@ export default function LandingPage() {
           padding:8px 0;margin-bottom:16px;
           border-bottom:1px solid #111827;
         }
-        .section-code{font-size:9px;color:#3a4560;letter-spacing:0.14em}
-        .section-title{font-size:11px;color:#5a6585;letter-spacing:0.1em;text-transform:uppercase}
+        .section-code{font-size:10px;color:#f1f5f9;letter-spacing:0.14em;font-weight:700}
+        .section-title{font-size:12px;color:#f1f5f9;letter-spacing:0.1em;text-transform:uppercase;font-weight:700}
         .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:#111827}
         .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#111827}
         .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:#111827}
@@ -120,13 +120,13 @@ export default function LandingPage() {
         .btn-outline-cta{
           display:inline-flex;align-items:center;gap:10px;
           background:transparent;border:1px solid #1c2235;
-          color:#5a6585;padding:12px 28px;font-family:'DM Mono',monospace;
+          color:#a1a1aa;padding:12px 28px;font-family:'DM Mono',monospace;
           font-size:12px;letter-spacing:0.1em;text-transform:uppercase;
           text-decoration:none;cursor:pointer;transition:all 0.2s;
         }
-        .btn-outline-cta:hover{border-color:#3a4560;color:#c8d0e0}
+        .btn-outline-cta:hover{border-color:#8b949e;color:#f1f5f9}
         .step-num{
-          font-size:48px;font-weight:300;color:#1c2235;
+          font-size:48px;font-weight:300;color:#4b5563;
           letter-spacing:-0.05em;line-height:1;font-family:'DM Mono',monospace;
         }
         .feat-icon{
@@ -141,7 +141,7 @@ export default function LandingPage() {
       <div className="ticker-wrap">
         <div style={{ padding: '0 12px', borderRight: '1px solid #1c2235', height: '100%', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <BlinkDot color="#00d4a0" />
-          <span style={{ fontSize: 9, letterSpacing: '0.16em', color: '#3a4560' }}>LIVE</span>
+          <span style={{ fontSize: 9, letterSpacing: '0.16em', color: '#8b949e' }}>LIVE</span>
         </div>
         <Ticker speed={35} />
       </div>
@@ -164,8 +164,8 @@ export default function LandingPage() {
             flexShrink: 0,
           }}>₿</div>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 500, color: '#c8d0e0', letterSpacing: '0.1em' }}>BTCBOOST</div>
-            <div style={{ fontSize: 8, color: '#3a4560', letterSpacing: '0.12em' }}>sBTC YIELD VAULT</div>
+            <div style={{ fontSize: 11, fontWeight: 500, color: '#f1f5f9', letterSpacing: '0.1em' }}>BTCBOOST</div>
+            <div style={{ fontSize: 8, color: '#8b949e', letterSpacing: '0.12em' }}>sBTC YIELD VAULT</div>
           </div>
         </div>
 
@@ -174,12 +174,12 @@ export default function LandingPage() {
           {[['#protocol', 'PROTOCOL'], ['#why-stacks', 'WHY STACKS'], ['#vault', 'HOW IT WORKS']].map(([href, label]) => (
             <a key={label} href={href} style={{
               height: '100%', padding: '0 20px', display: 'flex', alignItems: 'center',
-              fontSize: 10, color: '#3a4560', letterSpacing: '0.1em',
+              fontSize: 10, color: '#8b949e', letterSpacing: '0.1em',
               textDecoration: 'none', borderRight: '1px solid #111827',
               transition: 'color 0.2s',
             }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#c8d0e0')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#3a4560')}
+              onMouseEnter={e => (e.currentTarget.style.color = '#f1f5f9')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#8b949e')}
             >{label}</a>
           ))}
         </div>
@@ -188,7 +188,7 @@ export default function LandingPage() {
         <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
           <div style={{ padding: '0 20px', borderLeft: '1px solid #111827', height: '100%', display: 'flex', alignItems: 'center', gap: 6 }}>
             <BlinkDot color="#00d4a0" />
-            <span style={{ fontSize: 11, color: '#5a6585', fontFamily: '"DM Mono",monospace' }}>{time} UTC</span>
+            <span style={{ fontSize: 11, color: '#a1a1aa', fontFamily: '"DM Mono",monospace' }}>{time} UTC</span>
           </div>
           <Link href="/vault" style={{
             height: '100%', padding: '0 24px', display: 'flex', alignItems: 'center',
@@ -215,7 +215,7 @@ export default function LandingPage() {
                 <span className="tag" style={{ color: '#4a9eff', borderColor: '#0d2040' }}>USDCX TRACK</span>
                 <span className="tag" style={{ color: '#00d4a0', borderColor: '#003020' }}>BUIDL BATTLE #2</span>
               </div>
-              <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.2em', marginBottom: 16 }}>BTCBOOST / PROTOCOL OVERVIEW</div>
+              <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.2em', marginBottom: 16 }}>BTCBOOST / PROTOCOL OVERVIEW</div>
               <h1 style={{
                 fontFamily: '"Space Grotesk",sans-serif',
                 fontSize: 'clamp(32px,4vw,52px)',
@@ -226,7 +226,7 @@ export default function LandingPage() {
                 Idle Bitcoin,<br />
                 <span style={{ color: '#e0a820' }}>Amplified Yield.</span>
               </h1>
-              <p style={{ fontSize: 13, color: '#5a6585', lineHeight: 1.8, maxWidth: 440, fontWeight: 300 }}>
+              <p style={{ fontSize: 13, color: '#f1f5f9', lineHeight: 1.8, maxWidth: 440, fontWeight: 300 }}>
                 Deposit sBTC as collateral. The vault borrows USDCx, reinvests into Stacks DeFi pools, and loops — amplifying your yield without ever selling Bitcoin.
               </p>
             </div>
@@ -239,7 +239,7 @@ export default function LandingPage() {
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12, marginBottom: 28 }}>
                 <span style={{ fontSize: 56, fontWeight: 300, color: '#00d4a0', lineHeight: 1, letterSpacing: '-0.04em', fontFamily: '"DM Mono",monospace' }}>{apy.toFixed(2)}%</span>
                 <div style={{ paddingBottom: 6 }}>
-                  <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.14em', marginBottom: 4 }}>NET APY</div>
+                  <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.14em', marginBottom: 4 }}>NET APY</div>
                   <div style={{ fontSize: 9, color: '#00d4a0', letterSpacing: '0.1em' }}>AT 2× LEVERAGE</div>
                 </div>
               </div>
@@ -253,10 +253,10 @@ export default function LandingPage() {
           {/* Right: live data terminal */}
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '12px 20px', borderBottom: '1px solid #111827', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.14em' }}>VAULT / METRICS</div>
+              <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.14em' }}>VAULT / METRICS</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <BlinkDot color="#00d4a0" />
-                <span style={{ fontSize: 9, color: '#3a4560' }}>LIVE</span>
+                <span style={{ fontSize: 9, color: '#8b949e' }}>LIVE</span>
               </div>
             </div>
             <div style={{ flex: 1, padding: '8px 0' }}>
@@ -285,19 +285,19 @@ export default function LandingPage() {
       {/* ═══ SECOND TICKER (reverse) ═══ */}
       <div className="ticker-wrap" style={{ borderTop: '1px solid #111827' }}>
         <div style={{ padding: '0 12px', borderRight: '1px solid #1c2235', height: '100%', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <span style={{ fontSize: 9, letterSpacing: '0.14em', color: '#3a4560' }}>MKT</span>
+          <span style={{ fontSize: 9, letterSpacing: '0.14em', color: '#8b949e' }}>MKT</span>
         </div>
         <Ticker reverse speed={50} />
       </div>
 
       {/* ═══ HOW IT WORKS ═══ */}
       <section id="vault" style={{ borderBottom: '1px solid #111827' }}>
-        <div style={{ padding: '16px 48px', borderBottom: '1px solid #111827', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div className="section-header" style={{ marginBottom: 0 }}>
+        <div style={{ padding: '20px 48px', borderBottom: '1px solid #111827', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+          <div className="section-header" style={{ marginBottom: 0, borderBottom: 'none' }}>
             <span className="section-code">▸ VAULT.002</span>
             <span className="section-title">Mechanism — Leveraged Yield Loop</span>
           </div>
-          <span style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.1em' }}>3 STEPS</span>
+          <span style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.1em', position: 'absolute', right: 48 }}>3 STEPS</span>
         </div>
 
         <div className="grid-3">
@@ -312,7 +312,7 @@ export default function LandingPage() {
               <div style={{ fontSize: 9, color: step.color, letterSpacing: '0.16em', marginBottom: 10 }}>{step.title}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {step.lines.map((l, i) => (
-                  <div key={i} style={{ fontSize: 12, color: '#4a5568', lineHeight: 1.6 }}>{l}</div>
+                  <div key={i} style={{ fontSize: 12, color: '#f1f5f9', lineHeight: 1.6 }}>{l}</div>
                 ))}
               </div>
               {idx < 2 && <div style={{ position: 'absolute', right: -1, top: '50%', fontSize: 16, color: '#1c2235', transform: 'translateY(-50%)', zIndex: 2 }}>▶</div>}
@@ -341,8 +341,8 @@ export default function LandingPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <span style={{ fontSize: 9, color: f.color, letterSpacing: '0.14em' }}>{f.code}</span>
               </div>
-              <div style={{ fontSize: 16, fontFamily: '"Space Grotesk",sans-serif', fontWeight: 600, color: '#c8d0e0', marginBottom: 12, letterSpacing: '-0.01em' }}>{f.title}</div>
-              <p style={{ fontSize: 12, color: '#4a5568', lineHeight: 1.8, fontWeight: 300 }}>{f.desc}</p>
+              <div style={{ fontSize: 16, fontFamily: '"Space Grotesk",sans-serif', fontWeight: 600, color: '#f1f5f9', marginBottom: 12, letterSpacing: '-0.01em' }}>{f.title}</div>
+              <p style={{ fontSize: 12, color: '#f1f5f9', lineHeight: 1.8, fontWeight: 300 }}>{f.desc}</p>
             </div>
           ))}
         </div>
@@ -357,21 +357,21 @@ export default function LandingPage() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
             <BlinkDot />
-            <span style={{ fontSize: 9, color: '#3a4560' }}>UPDATING</span>
+            <span style={{ fontSize: 9, color: '#8b949e' }}>UPDATING</span>
           </div>
         </div>
 
         <div className="grid-4">
           {[
-            { label: 'TOTAL VALUE LOCKED', val: '$295.4K', sub: '2.84 sBTC', color: '#c8d0e0' },
+            { label: 'TOTAL VALUE LOCKED', val: '$295.4K', sub: '2.84 sBTC', color: '#f1f5f9' },
             { label: 'BOOSTED NET APY', val: `${apy.toFixed(2)}%`, sub: 'at 2× leverage', color: '#00d4a0' },
             { label: 'MAX MULT', val: '3.00×', sub: 'safe LTV enforced', color: '#e0a820' },
             { label: 'REWARD TOKEN', val: 'USDCx', sub: 'circle · stacks', color: '#4a9eff' },
           ].map(s => (
             <div key={s.label} style={{ background: '#070B14', padding: '32px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.14em', marginBottom: 12 }}>{s.label}</div>
+              <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.14em', marginBottom: 12 }}>{s.label}</div>
               <div style={{ fontSize: 36, fontWeight: 300, color: s.color, letterSpacing: '-0.03em', fontFamily: '"DM Mono",monospace', lineHeight: 1, marginBottom: 8 }}>{s.val}</div>
-              <div style={{ fontSize: 10, color: '#3a4560', letterSpacing: '0.1em' }}>{s.sub}</div>
+              <div style={{ fontSize: 10, color: '#8b949e', letterSpacing: '0.1em' }}>{s.sub}</div>
             </div>
           ))}
         </div>
@@ -380,11 +380,11 @@ export default function LandingPage() {
       {/* ═══ CTA ═══ */}
       <section style={{ display: 'grid', gridTemplateColumns: '1fr 300px' }}>
         <div style={{ padding: '56px 48px', borderRight: '1px solid #111827' }}>
-          <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.2em', marginBottom: 12 }}>▸ CTA.005 — INITIATE POSITION</div>
+          <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.2em', marginBottom: 12 }}>▸ CTA.005 — INITIATE POSITION</div>
           <h2 style={{ fontFamily: '"Space Grotesk",sans-serif', fontSize: 'clamp(26px,3vw,42px)', fontWeight: 700, letterSpacing: '-0.03em', color: '#e8edf5', lineHeight: 1.1, marginBottom: 14 }}>
             Start earning<br />amplified Bitcoin yield.
           </h2>
-          <p style={{ fontSize: 12, color: '#4a5568', lineHeight: 1.8, maxWidth: 380 }}>
+          <p style={{ fontSize: 12, color: '#f1f5f9', lineHeight: 1.8, maxWidth: 380 }}>
             Connect Leather or Xverse wallet. Deposit any amount of sBTC. Choose leverage. One click and the vault handles the rest.
           </p>
         </div>
@@ -402,9 +402,9 @@ export default function LandingPage() {
           <div style={{ padding: '20px', borderTop: '1px solid #1c2235', background: '#0a0f1e', textAlign: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 4 }}>
               <BlinkDot color="#00d4a0" />
-              <span style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.12em' }}>LIVE ON STACKS TESTNET</span>
+              <span style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.12em' }}>LIVE ON STACKS TESTNET</span>
             </div>
-            <div style={{ fontSize: 9, color: '#3a4560', letterSpacing: '0.1em' }}>BUIDL BATTLE #2 · sBTC + USDCx</div>
+            <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.1em' }}>BUIDL BATTLE #2 · sBTC + USDCx</div>
           </div>
         </div>
       </section>
@@ -412,7 +412,7 @@ export default function LandingPage() {
       {/* ═══ BOTTOM TICKER ═══ */}
       <div className="ticker-wrap" style={{ borderTop: '1px solid #111827', borderBottom: 'none' }}>
         <div style={{ padding: '0 12px', borderRight: '1px solid #1c2235', height: '100%', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-          <span style={{ fontSize: 9, letterSpacing: '0.14em', color: '#3a4560' }}>SYS</span>
+          <span style={{ fontSize: 9, letterSpacing: '0.14em', color: '#8b949e' }}>SYS</span>
         </div>
         <Ticker speed={28} />
       </div>
