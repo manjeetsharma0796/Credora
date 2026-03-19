@@ -22,12 +22,12 @@
   - Run through: deposit → boost → claim → withdraw using deployed contract.
   - Add helpful error messages for network / contract failures.
 
-- [ ] **UX polish for failure / edge cases**
+- [x] **UX polish for failure / edge cases**
   - Show explicit banner when wallet is not installed or user rejects connection.
   - Guard against zero balances / invalid input (NaN, very small amounts).
   - Add small helper text + links to get testnet STX, sBTC, USDCx.
 
-- [ ] **Configuration & docs**
+- [x] **Configuration & docs**
   - Document contract address / name and token contract IDs in `README`.
   - Add short “How to demo” section with step‑by‑step flow.
-
+  - Add `VALIDATION.md` with full project validation template filled out.

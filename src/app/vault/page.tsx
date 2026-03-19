@@ -92,6 +92,7 @@ export default function VaultPage() {
   const [txStatus, setTxStatus]       = useState<TxStatus>('idle');
   const [lastTxId, setLastTxId]       = useState<string | null>(null);
   const [errorMsg, setErrorMsg]       = useState('');
+  const [walletError, setWalletError] = useState('');
   const [balances, setBalances]       = useState<Balances>({ stx: '—', sbtc: '—', usdcx: '—' });
   const [vaultInfo, setVaultInfo]     = useState<VaultInfo>({ depositedSbtc: 0, borrowedUsdcx: 0, accruedYield: 0, lastUpdate: 0 });
   const [loadingBal, setLoadingBal]   = useState(false);
@@ -155,8 +156,26 @@ export default function VaultPage() {
   const address     = getSafeTestnetAddress();
   const isConnected = !!address;
   const shortAddr   = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : null;
-  const usdVal      = sbtcAmount ? `≈ $${(Number(sbtcAmount) * 104_000).toLocaleString()}` : '≈ $0';
-  const estYield    = sbtcAmount ? (Number(sbtcAmount) * 104_000 * apy / 100).toFixed(0) : '—';
+
+  // ── Input validation ──────────────────────────────────────────────────────
+  const parsedAmount      = parseFloat(sbtcAmount);
+  const MIN_SBTC          = 0.00000001; // 1 satoshi
+  const knownBalance      = balances.sbtc !== '—' ? parseFloat(balances.sbtc) : null;
+  const amountIsNaN       = sbtcAmount !== '' && isNaN(parsedAmount);
+  const amountTooSmall    = !amountIsNaN && sbtcAmount !== '' && parsedAmount > 0 && parsedAmount < MIN_SBTC;
+  const amountExceedsBal  = !amountIsNaN && !amountTooSmall && knownBalance !== null && parsedAmount > knownBalance;
+  const isValidAmount     = sbtcAmount !== '' && !amountIsNaN && parsedAmount > 0 && !amountTooSmall && !amountExceedsBal;
+
+  const amountError = amountIsNaN
+    ? 'Please enter a valid number.'
+    : amountTooSmall
+      ? `Minimum deposit is ${MIN_SBTC} sBTC (1 satoshi).`
+      : amountExceedsBal
+        ? `Amount exceeds your balance of ${balances.sbtc} sBTC.`
+        : '';
+
+  const usdVal   = isValidAmount ? `≈ $${(parsedAmount * 104_000).toLocaleString()}` : '≈ $0';
+  const estYield = isValidAmount ? (parsedAmount * 104_000 * apy / 100).toFixed(0) : '—';
 
   // Human-readable vault values
   const depositedSbtcHuman  = (vaultInfo.depositedSbtc  / 1e8).toFixed(8);
@@ -165,16 +184,30 @@ export default function VaultPage() {
   const hasYieldToClaim     = vaultInfo.accruedYield > 0;
 
   /* ── Handlers ── */
-  const handleConnect    = () => authenticate();
+  const handleConnect = () => {
+    // Detect common Stacks wallet providers without casting the entire window object
+    const win = window as Window & {
+      LeatherProvider?: unknown;
+      XverseProviders?: unknown;
+      StacksProvider?: unknown;
+    };
+    const hasWallet = !!(win.LeatherProvider || win.XverseProviders || win.StacksProvider);
+    if (!hasWallet) {
+      setWalletError('No Stacks wallet detected. Please install Leather or Xverse first.');
+      return;
+    }
+    setWalletError('');
+    authenticate();
+  };
   const handleDisconnect = () => disconnect();
 
   const handleBoost = async () => {
-    if (!sbtcAmount || Number(sbtcAmount) <= 0 || !isConnected) return;
+    if (!isValidAmount || !isConnected) return;
     setErrorMsg('');
     try {
       // Step 1: deposit
       setTxStatus('pending-deposit');
-      const depositTxId = await depositSbtc(Number(sbtcAmount));
+      const depositTxId = await depositSbtc(parsedAmount);
       setLastTxId(depositTxId);
 
       // Step 2: boost (immediately after wallet signs deposit)
@@ -470,7 +503,26 @@ export default function VaultPage() {
                     ))}
                   </div>
                   <button onClick={handleConnect} className="btn-primary">CONNECT WALLET →</button>
+                  {walletError && (
+                    <div style={{ marginTop: 12, background: 'rgba(240,82,82,0.07)', border: '1px solid rgba(240,82,82,0.2)', padding: '12px 16px', fontSize: 10, color: '#f05252', letterSpacing: '0.08em', lineHeight: 1.6 }}>
+                      ✗ {walletError}
+                    </div>
+                  )}
                   <div style={{ marginTop: 12, fontSize: 9, color: '#8b949e', textAlign: 'center', letterSpacing: '0.1em' }}>NO PRIVATE KEY REQUIRED · READ-ONLY UNTIL YOU SIGN</div>
+
+                  {/* Testnet faucet helper */}
+                  <div style={{ marginTop: 24, padding: '14px 18px', background: '#0a0f1e', border: '1px solid #111827' }}>
+                    <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.14em', marginBottom: 10 }}>TESTNET SETUP — GET FREE FUNDS</div>
+                    {[
+                      { label: 'Get testnet STX (gas)', href: 'https://explorer.hiro.so/sandbox/faucet?chain=testnet', note: 'Hiro faucet — receive STX on testnet' },
+                      { label: 'Hiro Explorer (testnet)', href: 'https://explorer.hiro.so/?chain=testnet', note: 'Browse contracts and call mint functions' },
+                    ].map(l => (
+                      <div key={l.label} style={{ marginBottom: 8 }}>
+                        <a href={l.href} target="_blank" rel="noopener noreferrer" style={{ fontSize: 10, color: '#4a9eff', letterSpacing: '0.08em', textDecoration: 'none' }}>{l.label} →</a>
+                        <div style={{ fontSize: 9, color: '#4a5568', marginTop: 2 }}>{l.note}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -503,8 +555,10 @@ export default function VaultPage() {
                         className="vault-input"
                         type="number"
                         placeholder="0.00000000"
+                        min={MIN_SBTC}
                         value={sbtcAmount}
                         onChange={e => setSbtcAmount(e.target.value)}
+                        style={{ borderColor: amountError ? 'rgba(240,82,82,0.5)' : undefined }}
                       />
                       <div style={{ position: 'absolute', right: 0, top: 0, height: '100%', display: 'flex' }}>
                         <span style={{ padding: '0 14px', display: 'flex', alignItems: 'center', fontSize: 11, color: '#e0a820', borderLeft: '1px solid #1c2235', letterSpacing: '0.08em' }}>sBTC</span>
@@ -516,11 +570,22 @@ export default function VaultPage() {
                         >MAX</button>
                       </div>
                     </div>
-                    <div style={{ marginTop: 6, fontSize: 10, color: '#8b949e', letterSpacing: '0.06em' }}>{usdVal}</div>
+                    {amountError
+                      ? <div style={{ marginTop: 6, fontSize: 10, color: '#f05252', letterSpacing: '0.06em' }}>✗ {amountError}</div>
+                      : <div style={{ marginTop: 6, fontSize: 10, color: '#8b949e', letterSpacing: '0.06em' }}>{usdVal}</div>
+                    }
+                    {knownBalance !== null && knownBalance === 0 && (
+                      <div style={{ marginTop: 10, padding: '10px 14px', background: 'rgba(74,158,255,0.05)', border: '1px solid rgba(74,158,255,0.15)', fontSize: 9, color: '#4a9eff', letterSpacing: '0.08em', lineHeight: 1.7 }}>
+                        ℹ Your sBTC balance is 0. To get testnet funds:&nbsp;
+                        <a href="https://explorer.hiro.so/sandbox/faucet?chain=testnet" target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>Get STX →</a>
+                        &nbsp;then call <code style={{ fontSize: 8 }}>mint</code> on the&nbsp;
+                        <a href={`https://explorer.hiro.so/address/ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.mock-sbtc?chain=testnet`} target="_blank" rel="noopener noreferrer" style={{ color: '#4a9eff' }}>mock-sbtc contract →</a>
+                      </div>
+                    )}
                   </div>
 
                   {/* Preview */}
-                  {sbtcAmount && Number(sbtcAmount) > 0 && (
+                  {isValidAmount && (
                     <div style={{ background: '#0a0f1e', border: '1px solid #111827', padding: '16px 20px', marginBottom: 20, animation: 'fadeUp 0.2s ease' }}>
                       <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.14em', marginBottom: 12 }}>POSITION PREVIEW</div>
                       {[
@@ -538,8 +603,8 @@ export default function VaultPage() {
                   )}
 
                   <button
-                    onClick={() => { if (sbtcAmount && Number(sbtcAmount) > 0) setActiveStep(3); }}
-                    disabled={!sbtcAmount || Number(sbtcAmount) <= 0}
+                    onClick={() => { if (isValidAmount) setActiveStep(3); }}
+                    disabled={!isValidAmount}
                     className="btn-primary"
                   >
                     CONTINUE TO BOOST →
