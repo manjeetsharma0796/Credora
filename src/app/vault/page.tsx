@@ -6,7 +6,7 @@ import Link from 'next/link';
 import {
   authenticate, disconnect, userSession,
   depositSbtc, boostYield, claimYield, withdrawSbtc,
-  fetchBalances, getVaultInfo, explorerTxUrl,
+  fetchBalances, getVaultInfo, explorerTxUrl, VAULT_CONTRACT_ID, waitForTransaction,
   type Balances, type VaultInfo,
 } from '@/lib/stacks';
 
@@ -27,7 +27,8 @@ function getSafeTestnetAddress(): string | null {
   try {
     if (!userSession.isUserSignedIn()) return null;
     const data = userSession.loadUserData();
-    const addr = (data as any)?.profile?.stxAddress?.testnet as string | undefined;
+    const addr = (data as unknown as { profile?: { stxAddress?: { testnet?: string } } })
+      ?.profile?.stxAddress?.testnet;
     return addr ?? null;
   } catch {
     try {
@@ -93,6 +94,7 @@ export default function VaultPage() {
   const [lastTxId, setLastTxId]       = useState<string | null>(null);
   const [errorMsg, setErrorMsg]       = useState('');
   const [balances, setBalances]       = useState<Balances>({ stx: '—', sbtc: '—', usdcx: '—' });
+  const [vaultBalances, setVaultBalances] = useState<Balances>({ stx: '—', sbtc: '—', usdcx: '—' });
   const [vaultInfo, setVaultInfo]     = useState<VaultInfo>({ depositedSbtc: 0, borrowedUsdcx: 0, accruedYield: 0, lastUpdate: 0 });
   const [loadingBal, setLoadingBal]   = useState(false);
   const [apy, setApy]                 = useState(11.20);
@@ -124,9 +126,14 @@ export default function VaultPage() {
     if (!addr) return;
     setLoadingBal(true);
     try {
-      const [bal, vault] = await Promise.all([fetchBalances(addr), getVaultInfo(addr)]);
+      const [bal, vault, vBal] = await Promise.all([
+        fetchBalances(addr),
+        getVaultInfo(addr),
+        fetchBalances(VAULT_CONTRACT_ID),
+      ]);
       setBalances(bal);
       setVaultInfo(vault);
+      setVaultBalances(vBal);
     } finally {
       setLoadingBal(false);
     }
@@ -177,14 +184,19 @@ export default function VaultPage() {
       const depositTxId = await depositSbtc(Number(sbtcAmount));
       setLastTxId(depositTxId);
 
-      // Step 2: boost (immediately after wallet signs deposit)
+      // Step 2: wait for deposit confirmation before boosting
+      await waitForTransaction(depositTxId);
+
+      // Step 2: boost
       setTxStatus('pending-boost');
       const boostTxId = await boostYield(150);
       setLastTxId(boostTxId);
 
+      await waitForTransaction(boostTxId);
+
       setTxStatus('success');
       setActiveStep(4);
-      setTimeout(loadData, 4000);  // refresh after a moment
+      setTimeout(loadData, 1000);  // refresh after a moment
     } catch (err: unknown) {
       setTxStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Transaction failed');
@@ -198,8 +210,9 @@ export default function VaultPage() {
       setTxStatus('pending-claim');
       const txId = await claimYield();
       setLastTxId(txId);
+      await waitForTransaction(txId);
       setTxStatus('success');
-      setTimeout(loadData, 4000);
+      setTimeout(loadData, 1000);
     } catch (err: unknown) {
       setTxStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Claim failed');
@@ -213,8 +226,9 @@ export default function VaultPage() {
       setTxStatus('pending-deposit'); // reuse "pending" style
       const txId = await withdrawSbtc(vaultInfo.depositedSbtc / 1e8);
       setLastTxId(txId);
+      await waitForTransaction(txId);
       setTxStatus('success');
-      setTimeout(loadData, 4000);
+      setTimeout(loadData, 1000);
     } catch (err: unknown) {
       setTxStatus('error');
       setErrorMsg(err instanceof Error ? err.message : 'Withdrawal failed');
@@ -378,6 +392,21 @@ export default function VaultPage() {
                         <span style={{ fontSize: 10, color: '#f1f5f9' }}>{loadingBal ? '…' : b.val}</span>
                       </div>
                     ))}
+                  </div>
+                  <div style={{ borderTop: '1px solid #111827', paddingTop: 10, marginBottom: 12 }}>
+                    <div style={{ fontSize: 9, color: '#8b949e', letterSpacing: '0.12em', marginBottom: 8 }}>VAULT HOLDINGS</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {([
+                        { icon: '₿', label: 'sBTC',  val: vaultBalances.sbtc,  color: '#e0a820' },
+                        { icon: '$', label: 'USDCx', val: vaultBalances.usdcx, color: '#4a9eff' },
+                        { icon: '◈', label: 'STX',   val: vaultBalances.stx,   color: '#00d4a0' },
+                      ] as const).map(b => (
+                        <div key={b.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '5px 10px', background: '#0a0f1e', border: '1px solid #111827' }}>
+                          <span style={{ fontSize: 9, color: b.color }}>{b.icon} {b.label}</span>
+                          <span style={{ fontSize: 10, color: '#f1f5f9' }}>{loadingBal ? '…' : b.val}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <button
                     onClick={loadData}

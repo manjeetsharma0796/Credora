@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "stacks-clarity-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "tsx",
+        "C:/workspace/stacks/frontend/my-stacks-contracts/stacks-clarity-mcp/src/server.ts"
+      ],
+      "env": {
+        "HIRO_API_KEY": "7fc8278a5fa5aad244174fb0c5507e32",
+        "STACKS_NETWORK": "testnet"
+      }
+    }
+  }
+}

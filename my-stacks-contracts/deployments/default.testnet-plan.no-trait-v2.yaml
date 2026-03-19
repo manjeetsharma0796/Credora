@@ -1,0 +1,32 @@
+id: 0
+name: Testnet deployment (v2, no trait redeploy)
+network: testnet
+stacks-node: https://api.testnet.hiro.so
+bitcoin-node: http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332
+plan:
+  batches:
+  - id: 0
+    transactions:
+    - transaction-type: contract-publish
+      contract-name: mock-sbtc-v2
+      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
+      cost: 14300
+      path: contracts\mock-sbtc.clar
+      anchor-block-only: true
+      clarity-version: 4
+    - transaction-type: contract-publish
+      contract-name: mock-usdcx-v2
+      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
+      cost: 14590
+      path: contracts\mock-usdcx.clar
+      anchor-block-only: true
+      clarity-version: 4
+    - transaction-type: contract-publish
+      contract-name: sbtc-usdcx-vault-v2
+      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
+      cost: 108050
+      path: contracts\sbtc-usdcx-vault.clar
+      anchor-block-only: true
+      clarity-version: 4
+    epoch: '3.3'
+

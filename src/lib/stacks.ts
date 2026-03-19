@@ -18,10 +18,12 @@ const appConfig = new AppConfig(['store_write', 'publish_data']);
 export const userSession = new UserSession({ appConfig });
 
 // ─── Contract Addresses ────────────────────────────────────────────────────
-export const CONTRACT_ADDRESS  = 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
-export const CONTRACT_NAME     = 'sbtc-usdcx-vault';
-export const SBTC_CONTRACT_ID  = `${CONTRACT_ADDRESS}.mock-sbtc`;
-export const USDCX_CONTRACT_ID = `${CONTRACT_ADDRESS}.mock-usdcx`;
+// NOTE: These should match the currently-deployed v2 contracts on testnet.
+export const CONTRACT_ADDRESS = 'ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX';
+export const CONTRACT_NAME = 'sbtc-usdcx-vault-v2';
+export const SBTC_CONTRACT_ID = `${CONTRACT_ADDRESS}.mock-sbtc-v2`;
+export const USDCX_CONTRACT_ID = `${CONTRACT_ADDRESS}.mock-usdcx-v2`;
+export const VAULT_CONTRACT_ID = `${CONTRACT_ADDRESS}.${CONTRACT_NAME}`;
 
 // ─── Explorer ──────────────────────────────────────────────────────────────
 export function explorerTxUrl(txId: string) {
@@ -51,6 +53,44 @@ export interface Balances {
 }
 
 const HIRO_API = 'https://api.testnet.hiro.so';
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function waitForTransaction(txId: string, opts?: { timeoutMs?: number; pollMs?: number }) {
+  const timeoutMs = opts?.timeoutMs ?? 120_000;
+  let pollMs = opts?.pollMs ?? 2_000;
+  const startedAt = Date.now();
+
+  while (true) {
+    // NOTE: endpoint returns tx_status and tx_result with VM abort reason on failure.
+    const res = await fetch(`${HIRO_API}/extended/v1/tx/${txId}`);
+    if (res.ok) {
+      const data = await res.json();
+      const status = String(data?.tx_status ?? '');
+      if (status === 'success') return data;
+
+      // Any non-success terminal status should throw with the contract's error code.
+      if (
+        status &&
+        status !== 'pending' &&
+        status !== 'processing' &&
+        status !== 'unknown'
+      ) {
+        const repr = data?.tx_result?.repr ? String(data.tx_result.repr) : status;
+        throw new Error(`Transaction failed: ${repr}`);
+      }
+    }
+
+    if (Date.now() - startedAt > timeoutMs) {
+      throw new Error('Timed out waiting for transaction confirmation');
+    }
+
+    await sleep(pollMs);
+    pollMs = Math.min(Math.round(pollMs * 1.25), 8_000);
+  }
+}
 
 export async function fetchBalances(addr: string): Promise<Balances> {
   try {

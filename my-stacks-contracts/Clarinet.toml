@@ -5,9 +5,21 @@ authors = []
 telemetry = true
 cache_dir = "./.cache"
 
-# [contracts.counter]
-# path = "contracts/counter.clar"
-# epoch = "latest"
+[contracts.sip-010-trait-v2]
+path = "contracts/sip-010-trait.clar"
+epoch = "latest"
+
+[contracts.mock-sbtc-v2]
+path = "contracts/mock-sbtc.clar"
+epoch = "latest"
+
+[contracts.mock-usdcx-v2]
+path = "contracts/mock-usdcx.clar"
+epoch = "latest"
+
+[contracts.sbtc-usdcx-vault-v2]
+path = "contracts/sbtc-usdcx-vault.clar"
+epoch = "latest"
 
 # Check-checker settings:
 # trusted_sender: if true, inputs are trusted after tx_sender has been checked.
