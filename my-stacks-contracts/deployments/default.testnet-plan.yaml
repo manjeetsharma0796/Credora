@@ -5,34 +5,13 @@ stacks-node: https://api.testnet.hiro.so
 bitcoin-node: http://blockstack:blockstacksystem@bitcoind.testnet.stacks.co:18332
 plan:
   batches:
-  - id: 0
-    transactions:
-    - transaction-type: contract-publish
-      contract-name: sip-010-trait-v2
-      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
-      cost: 7170
-      path: contracts\sip-010-trait.clar
-      anchor-block-only: true
-      clarity-version: 4
-    - transaction-type: contract-publish
-      contract-name: mock-sbtc-v2
-      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
-      cost: 13880
-      path: contracts\mock-sbtc.clar
-      anchor-block-only: true
-      clarity-version: 4
-    - transaction-type: contract-publish
-      contract-name: mock-usdcx-v2
-      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
-      cost: 14170
-      path: contracts\mock-usdcx.clar
-      anchor-block-only: true
-      clarity-version: 4
-    - transaction-type: contract-publish
-      contract-name: sbtc-usdcx-vault-v2
-      expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
-      cost: 106370
-      path: contracts\sbtc-usdcx-vault.clar
-      anchor-block-only: true
-      clarity-version: 4
-    epoch: '3.3'
+    - id: 0
+      transactions:
+        - transaction-type: contract-publish
+          contract-name: credora-vault
+          expected-sender: ST14RA6VWTZJF2ZNK3G83A40BC0CBK31MCAEGS1HX
+          cost: 121300
+          path: contracts\credora-vault.clar
+          anchor-block-only: true
+          clarity-version: 4
+      epoch: "3.3"
